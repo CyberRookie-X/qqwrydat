@@ -195,6 +195,16 @@ function writeGeoIpEntry(countryCode, cidrs) {
   return buffer;
 }
 
+function writeVarint(value) {
+  const bytes = [];
+  while (value >= 0x80) {
+    bytes.push((value & 0xFF) | 0x80);
+    value >>>= 7;
+  }
+  bytes.push(value & 0xFF);
+  return Buffer.from(bytes);
+}
+
 function generateGeoipDat(inputFile, outputFile) {
   // 检查输入文件是否存在
   if (!fs.existsSync(inputFile)) {
@@ -272,17 +282,21 @@ function generateGeoipDat(inputFile, outputFile) {
   }
   
   // 写入geoip.dat文件
+  // 根据Landscape protobuf定义，GeoIPList包含entry字段，类型为repeated GeoIP
   let fileBuffer = Buffer.alloc(0);
   
-  // 写入条目数量
-  const countBuffer = Buffer.alloc(4);
-  countBuffer.writeUInt32LE(entries.size, 0);
-  fileBuffer = Buffer.concat([fileBuffer, countBuffer]);
-  
-  // 写入每个条目
+  // 写入每个GeoIP条目到GeoIPList (tag=1, wire type=2 表示length-delimited)
   for (const [countryCode, cidrs] of entries) {
     const entryBuffer = writeGeoIpEntry(countryCode, cidrs);
-    fileBuffer = Buffer.concat([fileBuffer, entryBuffer]);
+    
+    // 写入字段标签
+    const tag = Buffer.alloc(1);
+    tag.writeUInt8((1 << 3) | 2); // field number 1, wire type 2
+    fileBuffer = Buffer.concat([fileBuffer, tag]);
+    
+    // 写入长度（使用varint编码）
+    const lengthBuffer = writeVarint(entryBuffer.length);
+    fileBuffer = Buffer.concat([fileBuffer, lengthBuffer, entryBuffer]);
   }
   
   // 写入文件
