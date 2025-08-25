@@ -1,4 +1,4 @@
-name: qqwry DAT File Generator
+name: GeoIP DAT File Generator
 
 on:
   schedule:
@@ -34,7 +34,7 @@ jobs:
           node generate_geoip_dat.js qqwry.ipdb geoip.dat
 
       - name: Delete old releases
-        uses: dev-drprasad/delete-older-releases@v0.3.3
+        uses: dev-drprasad/delete-older-releases@v0.3.4
         with:
           keep_latest: 1
           delete_tags: true
@@ -42,11 +42,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload geoip.dat to release
-        uses: svenstaro/upload-release-action@v1
+        uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: geoip.dat
           asset_name: qqwry.dat
           tag: geoip-data
           overwrite: true
-          body: "自动生成的qqwry数据库文件，基于纯真IP数据库。每日更新。"
+          body: "自动生成的GeoIP数据库文件，基于纯真IP数据库。每日更新。"
